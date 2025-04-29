@@ -12,24 +12,30 @@ use Illuminate\Database\Eloquent\Model;
 class TokensRelationManager extends RelationManager
 {
     protected static string $relationship = 'tokens';
-    protected static ?string $recordTitleAttribute = 'name';
 
     public function table(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('name'),
+                TextColumn::make('name')->label('Token Name'),
                 TextColumn::make('last_used_at')->since(),
             ])
             ->headerActions([
                 CreateAction::make()
                     ->label('Create Token')
+                    ->form([
+                        \Filament\Forms\Components\TextInput::make('name')
+                            ->label('Token name')
+                            ->required(),
+                    ])
                     ->using(function (array $data, Model $user) {
-                        $plain = $user->createToken($data['name'] ?? 'token')
-                                      ->plainTextToken;
+                        // Sanctum
+                        $plain = $user->createToken($data['name'])->plainTextToken;
+
                         Notification::make()
-                            ->title("Token: $plain")
-                            ->info()
+                            ->title('Token created')
+                            ->body("**Copy now:** `{$plain}`")
+                            ->success()
                             ->send();
                     }),
             ])
